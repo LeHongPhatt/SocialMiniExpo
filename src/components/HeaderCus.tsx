@@ -1,0 +1,110 @@
+import { FontAwesome } from "@expo/vector-icons";
+import React from "react";
+import { View, TouchableOpacity, Text } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+// import { ArrowLeft } from "lucide-react-native";
+
+type HeaderIcon = {
+  icon: React.ReactNode;
+  onPress?: () => void;
+};
+
+interface HeaderProps {
+  // Kiểu header
+  type?: "logo-with-icons" | "back-with-title" | "back-only";
+
+  // Common props
+  backgroundColor?: string;
+  textColor?: string;
+  height?: number;
+  showShadow?: boolean;
+  paddingBottom?: number;
+  // Back button
+  showBackButton?: boolean;
+  onBackPress?: () => void;
+
+  // Title / content ở giữa
+  title?: string;
+  centerContent?: React.ReactNode;
+
+  // Logo + icons
+  leftLogo?: React.ReactNode;
+  icons?: HeaderIcon[];
+}
+
+const HeaderCus: React.FC<HeaderProps> = ({
+  type = "logo-with-icons",
+  backgroundColor = "#fff",
+  textColor = "#000",
+  height = 60,
+  paddingBottom = -30,
+  showShadow = true,
+  showBackButton = false,
+  onBackPress,
+  title,
+  centerContent,
+  leftLogo,
+  icons = [],
+}) => {
+  return (
+    <SafeAreaView
+      style={{
+        backgroundColor,
+        shadowColor: showShadow ? "#000" : undefined,
+        shadowOpacity: showShadow ? 0.1 : 0,
+        shadowRadius: showShadow ? 4 : 0,
+        elevation: showShadow ? 3 : 0,
+        paddingBottom: paddingBottom,
+      }}
+    >
+      <View
+        style={{
+          height,
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingHorizontal: 16,
+        }}
+      >
+        {/* LEFT SIDE: Back button or logo */}
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {showBackButton && (
+            <TouchableOpacity onPress={onBackPress} style={{ marginRight: 12 }}>
+              <FontAwesome name="car" size={24} color={textColor} />
+            </TouchableOpacity>
+          )}
+          {type === "logo-with-icons" && leftLogo}
+        </View>
+
+        {/* CENTER: Title / Custom content */}
+        <View style={{ flex: 1, alignItems: "center" }}>
+          {centerContent
+            ? centerContent
+            : title && (
+                <Text
+                  style={{ fontSize: 18, fontWeight: "600", color: textColor }}
+                >
+                  {title}
+                </Text>
+              )}
+        </View>
+
+        {/* RIGHT SIDE: Icons (only if type supports) */}
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          {type === "logo-with-icons" &&
+            icons.slice(0, 3).map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={item.onPress}
+                style={{ marginLeft: 16 }}
+              >
+                {item.icon}
+              </TouchableOpacity>
+            ))}
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+export default HeaderCus;
