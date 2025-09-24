@@ -37,7 +37,7 @@ export const loginUser = createAsyncThunk(
     async (credentials: LoginRequest, { rejectWithValue }) => {
         try {
             const response = await AuthService.login(credentials);
-            
+
             if (response.success && response.data) {
                 return {
                     id: response.data.user.id,
@@ -57,14 +57,14 @@ export const loginUser = createAsyncThunk(
 
 // Async thunk cho logout
 export const logoutUser = createAsyncThunk(
-  "auth/logoutUser",
-  async (_, { dispatch }) => {
-    // Xoá token khỏi AsyncStorage
-    await AsyncStorage.removeItem("auth");
-    // reset state redux
-    dispatch(removeAuth());
-    return true;
-  }
+    "auth/logoutUser",
+    async (_, { dispatch }) => {
+        // Xoá token khỏi AsyncStorage
+        await AsyncStorage.removeItem("auth");
+        // reset state redux
+        dispatch(removeAuth());
+        return true;
+    }
 );
 
 // Async thunk cho get profile
@@ -73,7 +73,7 @@ export const getProfile = createAsyncThunk(
     async (_, { rejectWithValue }) => {
         try {
             const response = await AuthService.getProfile();
-            
+
             if (response.success && response.data) {
                 return {
                     id: response.data.id,
@@ -106,6 +106,9 @@ const authSlice = createSlice({
 
         clearError: (state) => {
             state.error = null;
+        },
+        updateAvatar: (state, action) => {
+            state.authData.avatar = action.payload;
         },
     },
     extraReducers: (builder) => {
@@ -156,7 +159,7 @@ const authSlice = createSlice({
 });
 
 export const authReducer = authSlice.reducer;
-export const { addAuth, removeAuth, clearError } = authSlice.actions;
+export const { addAuth, removeAuth, clearError, updateAvatar } = authSlice.actions;
 
 export const authSelector = (state: any) => state.authReducer.authData;
 export const authLoadingSelector = (state: any) => state.authReducer.isLoading;

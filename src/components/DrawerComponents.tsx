@@ -1,4 +1,11 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Platform,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import React, { use } from "react";
 import { FontAwesome, FontAwesome5 } from "@expo/vector-icons";
 import ContainerCus from "./ContainerCus";
@@ -69,14 +76,21 @@ const DrawerComponents = ({ navigation }: any) => {
   ];
   return (
     <View style={{ flex: 1 }}>
-      <SectionCus>
+      <SectionCus
+        styles={{
+          flexDirection: "row",
+          paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 50,
+          justifyContent: "space-between",
+        }}
+      >
         <TouchableOpacity
-          style={{ alignItems: "flex-start", top: 30 }}
+          style={{ alignItems: "flex-start" }}
           onPress={() => navigation.closeDrawer()}
         >
           <FontAwesome size={32} name="long-arrow-left" />
         </TouchableOpacity>
-        <AvatarCus />
+        <AvatarCus uri={user.avatar} size={150}  />
+        <SpaceCus width={32} />
       </SectionCus>
       <SectionCus styles={{ alignItems: "center" }}>
         <TextCus text={user?.username} title />

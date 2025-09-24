@@ -14,7 +14,10 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.hongphat123.SocialMiniApp",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true  
+        }
       }
     },
     "android": {
@@ -34,5 +37,6 @@
     "plugins": [
       "expo-font"
     ]
+    
   }
 }

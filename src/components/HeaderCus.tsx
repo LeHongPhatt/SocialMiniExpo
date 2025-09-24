@@ -37,7 +37,7 @@ const HeaderCus: React.FC<HeaderProps> = ({
   backgroundColor = "#fff",
   textColor = "#000",
   height = 60,
-  paddingBottom = -30,
+  paddingBottom = -20,
   showShadow = true,
   showBackButton = false,
   onBackPress,
@@ -49,12 +49,18 @@ const HeaderCus: React.FC<HeaderProps> = ({
   return (
     <SafeAreaView
       style={{
-        backgroundColor,
-        shadowColor: showShadow ? "#000" : undefined,
-        shadowOpacity: showShadow ? 0.1 : 0,
-        shadowRadius: showShadow ? 4 : 0,
-        elevation: showShadow ? 3 : 0,
-        paddingBottom: paddingBottom,
+        // backgroundColor:"red",
+        // shadowColor: showShadow ? "#000" : undefined,
+        // shadowOpacity: showShadow ? 0.1 : 0,
+        // shadowRadius: showShadow ? 4 : 0,
+        // elevation: showShadow ? 3 : 0,
+        // paddingBottom: paddingBottom,
+
+        height,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: 16,
       }}
     >
       <View
@@ -64,6 +70,8 @@ const HeaderCus: React.FC<HeaderProps> = ({
           justifyContent: "space-between",
           alignItems: "center",
           paddingHorizontal: 16,
+          backgroundColor,
+          flex: 1,
         }}
       >
         {/* LEFT SIDE: Back button or logo */}
