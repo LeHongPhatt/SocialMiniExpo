@@ -111,7 +111,6 @@ const TabNavigator = () => {
       <Tab.Screen name="AddFriends" component={AddFriendScreens} />
       <Tab.Screen name="JobScreens" component={JobScreens} />
       <Tab.Screen name="GroupScreens" component={GroupScreens} />
-
       <Tab.Screen name="ProfileScreens" component={ProfileScreens} />
     </Tab.Navigator>
   );
