@@ -24,9 +24,14 @@ import {
 } from "../redux/reduces/authReducer";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { appColors } from "../constants/appColors";
+import { RootState } from "../redux/store";
 
 const DrawerComponents = ({ navigation }: any) => {
-  const user = useSelector(authSelector);
+  const profile = useSelector((state: RootState) => state.profile);
+  const auth = useSelector((state: RootState) => state.auth);
+
+  console.log("Redux profile:", profile);
+  console.log("Redux auth:", auth);
   const dispatch = useDispatch();
   const handleLogout = async () => {
     // Xoá token trong Redux
@@ -89,12 +94,21 @@ const DrawerComponents = ({ navigation }: any) => {
         >
           <FontAwesome size={32} name="long-arrow-left" />
         </TouchableOpacity>
-        <AvatarCus uri={user.avatar} size={150}  />
+        <AvatarCus
+          uri={
+            profile?.avatar
+              ? profile.avatar.startsWith("http")
+                ? profile.avatar
+                : `${appInfo.BASE_URL}${profile.avatar}`
+              : "https://dummyimage.com/100x100/cccccc/000000.png&text=No+Avatar"
+          }
+          size={150}
+        />
         <SpaceCus width={32} />
       </SectionCus>
       <SectionCus styles={{ alignItems: "center" }}>
-        <TextCus text={user?.username} title />
-        <TextCus text="Tag name" />
+        <TextCus text={profile.username || "texx"} title />
+        <TextCus text={profile.bio} />
       </SectionCus>
 
       <SpaceCus

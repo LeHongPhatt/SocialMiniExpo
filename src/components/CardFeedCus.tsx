@@ -12,8 +12,19 @@ import { fontFamily } from "../constants/fontFamily";
 interface PostActionsProps {
   likes: number | string;
   comments: number | string;
+  uri: any;
+  name: string;
+  content: string;
+  image?: string | null; // đúng chuẩn TS, có thể undefined hoặc null
 }
-const CardFeedCus: React.FC<PostActionsProps> = ({ comments, likes }) => {
+const CardFeedCus: React.FC<PostActionsProps> = ({
+  comments,
+  likes,
+  uri,
+  name,
+  content,
+  image,
+}) => {
   return (
     <View
       style={[
@@ -25,7 +36,7 @@ const CardFeedCus: React.FC<PostActionsProps> = ({ comments, likes }) => {
           borderRadius: 10,
 
           shadowOpacity: 0.6,
-          marginTop:20
+          marginTop: 20,
         },
       ]}
     >
@@ -35,9 +46,9 @@ const CardFeedCus: React.FC<PostActionsProps> = ({ comments, likes }) => {
           { paddingHorizontal: 0, marginTop: 10, paddingBottom: 0 },
         ]}
       >
-        <AvatarCus />
+        <AvatarCus uri={uri} />
         <SectionCus>
-          <TextCus text="name" title />
+          <TextCus text={name} title />
           <TextCus text="time" size={13} />
         </SectionCus>
       </SectionCus>
@@ -45,18 +56,22 @@ const CardFeedCus: React.FC<PostActionsProps> = ({ comments, likes }) => {
         size={14}
         font={fontFamily.raleway.regular}
         styles={{ flex: 1 }}
-        text="lorem jahdajhdak jhdakjshda kjsdhaskj dhakjdhadkjadkjah dk j ah dk jahd jhkqg whjgqwemasd aNG YUQ YG HJFG AW  IFGWE FGaweyuYGHw eUYJ GRF ua wẸghrfuuiij"
+        text={content}
       />
       <View>
-        <Image
-          source={Images.intro1}
-          style={{
-            width: appInfo.sizes.WIDTH,
-            height: appInfo.sizes.HEIGHT / 4,
-            alignSelf: "center",
-          }}
-          resizeMode="contain"
-        />
+        {image && image !== "null" && (
+          <Image
+            source={{
+              uri: image ?? "https://via.placeholder.com/400x200?text=No+Image",
+            }}
+            style={{
+              width: appInfo.sizes.WIDTH,
+              height: appInfo.sizes.HEIGHT / 4,
+              alignSelf: "center",
+            }}
+            resizeMode="contain"
+          />
+        )}
       </View>
       <ActionCus likeCount={likes} commentCount={comments} />
     </View>

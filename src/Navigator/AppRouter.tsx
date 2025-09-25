@@ -101,22 +101,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { addAuth, authSelector } from "../redux/reduces/authReducer";
 
 const AppRouters = () => {
-  const [isShowSplash, setIsShowSplash] = useState(true);
+ const [isShowSplash, setIsShowSplash] = useState(true);
   const [hasSeenIntro, setHasSeenIntro] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const dispatch = useDispatch();
   const auth = useSelector(authSelector);
 
-  // useEffect(() => {
-  //   const checkAppStatus = async () => {
-  //     const intro = await AsyncStorage.getItem("hasSeenIntro");
-  //     setHasSeenIntro(!!intro);
-
-  //     setIsShowSplash(false); // tắt splash sau khi kiểm tra
-  //   };
-  //   checkAppStatus();
-  // }, []);
   useEffect(() => {
     const initApp = async () => {
       try {
@@ -129,9 +119,7 @@ const AppRouters = () => {
         if (authData) {
           const parsedAuth = JSON.parse(authData);
           if (parsedAuth?.accesstoken) {
-            // dispatch vào Redux để các màn khác dùng
             dispatch(addAuth(parsedAuth));
-            setIsLoggedIn(true);
           }
         }
       } catch (error) {
@@ -144,16 +132,10 @@ const AppRouters = () => {
     initApp();
   }, [dispatch]);
 
-  if (isShowSplash) {
-    return <SplashScreen />;
-  }
+  if (isShowSplash) return <SplashScreen />;
 
-  // Luôn render AuthNavigator, chỉ khác initialRouteName
-  if (!hasSeenIntro) {
-    return <AuthNavigator initialRouteName="IntroScreens" />;
-  }
+  if (!hasSeenIntro) return <AuthNavigator initialRouteName="IntroScreens" />;
 
-  // Nếu đã xem intro:
   return auth.accesstoken ? (
     <MainNavigator />
   ) : (

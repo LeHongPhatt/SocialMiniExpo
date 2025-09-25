@@ -36,8 +36,12 @@ import axios from "axios";
 import authenticationAPI from "../../apis/authApi";
 import { fontFamily } from "../../constants/fontFamily";
 import StoryScreen from "../story/StoryScreens";
+import { RootState } from "../../redux/store";
+import { appInfo } from "../../constants/appInfors";
 const HomeScreens = ({ navigation }: any) => {
   const user = useSelector(authSelector);
+  const profile = useSelector((state: RootState) => state.profile);
+
   console.log("asdasd", user);
   const dispatch = useDispatch();
   const [isNew, setIsNew] = useState("");
@@ -128,9 +132,15 @@ const HomeScreens = ({ navigation }: any) => {
           <AvatarCus
             style={{ paddingLeft: 15 }}
             size={50}
-            uri={avatarUri}
+            uri={
+              profile.avatar
+                ? profile.avatar.startsWith("http")
+                  ? profile.avatar
+                  : `${appInfo.BASE_URL}${profile.avatar}`
+                : "https://dummyimage.com/100x100/cccccc/000000.png&text=No+Avatar"
+            }
             initials="PM"
-            onEdit={handleEditAvatar}
+            // onEdit={handleEditAvatar}
             backgroundColor="#EAEAEA"
           />
           <SectionCus styles={{ flex: 1, paddingBottom: 0 }}>
