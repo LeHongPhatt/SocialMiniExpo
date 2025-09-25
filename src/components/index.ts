@@ -12,4 +12,5 @@ import DividerCus from "./DividerCus";
 import StoryCus from "./StoryCus";
 import CardFeedCus from "./CardFeedCus";
 import ActionCus from "./ActionCus";
-export { DrawerComponents, DividerCus, ImageCus, SpaceCus, TextCus, InputCus, ContainerCus, RowCus, SectionCus, ButtonCus, AvatarCus, StoryCus, CardFeedCus, ActionCus };
+import DetailProfile from "./DetailProfile";
+export { DrawerComponents, DividerCus, ImageCus, SpaceCus, TextCus, InputCus, ContainerCus, RowCus, SectionCus, ButtonCus, AvatarCus, StoryCus, CardFeedCus, ActionCus, DetailProfile };

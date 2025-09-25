@@ -13,11 +13,13 @@ import HomeScreens from "../screens/home/HomeScreens";
 import { Images } from "../assets/images";
 import { useSelector } from "react-redux";
 import { authSelector } from "../redux/reduces/authReducer";
+import { RootState } from "../redux/store";
+import { appInfo } from "../constants/appInfors";
 
 const TabNavigator = () => {
   const Tab = createBottomTabNavigator();
-  const auth = useSelector(authSelector);
-  const avt = auth?.user?.avatar || null;
+  const profile = useSelector((state: RootState) => state.profile);
+  const avt = profile?.avatar || null;
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -70,7 +72,13 @@ const TabNavigator = () => {
             case "ProfileScreens": {
               icon = avt ? (
                 <Image
-                  source={{ uri: avt }}
+                  source={{
+                    uri: profile?.avatar
+                      ? profile.avatar.startsWith("http")
+                        ? profile.avatar
+                        : `${appInfo.BASE_URL}${profile.avatar}`
+                      : "https://dummyimage.com/100x100/cccccc/000000.png&text=No+Avatar",
+                  }}
                   style={{
                     width: 32,
                     height: 32,

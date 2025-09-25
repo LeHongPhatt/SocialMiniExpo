@@ -161,6 +161,6 @@ const authSlice = createSlice({
 export const authReducer = authSlice.reducer;
 export const { addAuth, removeAuth, clearError, updateAvatar } = authSlice.actions;
 
-export const authSelector = (state: any) => state.authReducer.authData;
+export const authSelector = (state: any) => state.auth.authData;
 export const authLoadingSelector = (state: any) => state.authReducer.isLoading;
 export const authErrorSelector = (state: any) => state.authReducer.error;
