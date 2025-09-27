@@ -26,10 +26,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { appColors } from "../constants/appColors";
 import { RootState } from "../redux/store";
 
-const DrawerComponents = ({ navigation }: any) => {
+const DrawerComponents = ({ navigation, route }: any) => {
   const profile = useSelector((state: RootState) => state.profile);
   const auth = useSelector((state: RootState) => state.auth);
-
   console.log("Redux profile:", profile);
   console.log("Redux auth:", auth);
   const dispatch = useDispatch();

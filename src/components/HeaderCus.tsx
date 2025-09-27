@@ -11,7 +11,11 @@ type HeaderIcon = {
 
 interface HeaderProps {
   // Kiểu header
-  type?: "logo-with-icons" | "back-with-title" | "back-only";
+  type?:
+    | "logo-with-icons"
+    | "back-with-title"
+    | "back-only"
+    | "back-title-icon";
 
   // Common props
   backgroundColor?: string;
@@ -19,6 +23,7 @@ interface HeaderProps {
   height?: number;
   showShadow?: boolean;
   paddingBottom?: number;
+
   // Back button
   showBackButton?: boolean;
   onBackPress?: () => void;
@@ -46,16 +51,12 @@ const HeaderCus: React.FC<HeaderProps> = ({
   leftLogo,
   icons = [],
 }) => {
+  // Hiển thị icons nếu type là logo-with-icons hoặc back-title-icon
+  const showIcons = type === "logo-with-icons" || type === "back-title-icon";
+
   return (
     <SafeAreaView
       style={{
-        // backgroundColor:"red",
-        // shadowColor: showShadow ? "#000" : undefined,
-        // shadowOpacity: showShadow ? 0.1 : 0,
-        // shadowRadius: showShadow ? 4 : 0,
-        // elevation: showShadow ? 3 : 0,
-        // paddingBottom: paddingBottom,
-
         height,
         flexDirection: "row",
         justifyContent: "space-between",
@@ -74,17 +75,17 @@ const HeaderCus: React.FC<HeaderProps> = ({
           flex: 1,
         }}
       >
-        {/* LEFT SIDE: Back button or logo */}
+        {/* LEFT SIDE */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           {showBackButton && (
             <TouchableOpacity onPress={onBackPress} style={{ marginRight: 12 }}>
-              <FontAwesome name="car" size={24} color={textColor} />
+              <FontAwesome name="arrow-left" size={24} color={textColor} />
             </TouchableOpacity>
           )}
           {type === "logo-with-icons" && leftLogo}
         </View>
 
-        {/* CENTER: Title / Custom content */}
+        {/* CENTER */}
         <View style={{ flex: 1, alignItems: "center" }}>
           {centerContent
             ? centerContent
@@ -97,9 +98,9 @@ const HeaderCus: React.FC<HeaderProps> = ({
               )}
         </View>
 
-        {/* RIGHT SIDE: Icons (only if type supports) */}
+        {/* RIGHT SIDE */}
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          {type === "logo-with-icons" &&
+          {showIcons &&
             icons.slice(0, 3).map((item, index) => (
               <TouchableOpacity
                 key={index}

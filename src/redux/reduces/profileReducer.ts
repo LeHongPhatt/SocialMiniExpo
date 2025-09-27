@@ -1,4 +1,6 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import axios from "axios";
+import authenticationAPI from "../../apis/authApi";
 
 interface Stats {
     posts: number;
@@ -22,19 +24,43 @@ interface ProfileState {
 
 const initialState: ProfileState = {};
 
+
+export const fetchProfile = createAsyncThunk(
+    "profile/fetchProfile",
+    async (_, { rejectWithValue }) => {
+        try {
+            const res = await authenticationAPI.HandleAuthentication("/get-profile", "get");
+            console.log("📡 API /get-profile response:", res);
+            return res;
+        } catch (error: any) {
+            console.log("❌ API /get-profile error:", error.response?.data);
+            return rejectWithValue(error.response?.data || "Fetch profile failed");
+        }
+    }
+);
+
+
 const profileSlice = createSlice({
     name: "profile",
     initialState,
     reducers: {
         ProfileReducer: (state, action: PayloadAction<ProfileState>) => {
-            return action.payload; // ✅ Ghi đè state cũ bằng dữ liệu mới
+            return action.payload;
         },
         updateProfileField: (state, action: PayloadAction<Partial<ProfileState>>) => {
-            return { ...state, ...action.payload }; // ✅ Merge dữ liệu
+            return { ...state, ...action.payload };
         },
-        clearProfile: () => {
-            return initialState; // ✅ Reset về rỗng
-        },
+        clearProfile: () => initialState,
+    },
+    extraReducers: (builder) => {
+        builder
+            .addCase(fetchProfile.fulfilled, (state, action) => {
+                return action.payload; // ✅ lưu luôn profile vào Redux
+            })
+            .addCase(fetchProfile.rejected, (state, action) => {
+                console.log("❌ Fetch profile error:", action.payload);
+                return initialState;
+            });
     },
 });
 
