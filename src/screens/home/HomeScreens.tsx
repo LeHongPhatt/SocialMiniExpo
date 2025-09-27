@@ -1,19 +1,15 @@
 import {
   Alert,
+  FlatList,
   Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { use, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  addAuth,
-  authSelector,
-  logoutUser,
-  updateAvatar,
-} from "../../redux/reduces/authReducer";
+
 import {
   AvatarCus,
   ButtonCus,
@@ -22,81 +18,29 @@ import {
   DividerCus,
   InputCus,
   SectionCus,
-  SpaceCus,
   StoryCus,
   TextCus,
 } from "../../components";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import HeaderCus from "../../components/HeaderCus";
 import { FontAwesome } from "@expo/vector-icons";
 import { Images } from "../../assets/images";
 import { globalStyles } from "../../styles/globalStyles";
-import * as ImagePicker from "expo-image-picker";
-import axios from "axios";
-import authenticationAPI from "../../apis/authApi";
 import { fontFamily } from "../../constants/fontFamily";
-import StoryScreen from "../story/StoryScreens";
 import { RootState } from "../../redux/store";
 import { appInfo } from "../../constants/appInfors";
-const HomeScreens = ({ navigation }: any) => {
-  const user = useSelector(authSelector);
+const HomeScreens = ({ navigation, route }: any) => {
+  const posts = useSelector((state: RootState) => state.posts.posts);
   const profile = useSelector((state: RootState) => state.profile);
-
-  console.log("asdasd", user);
-  const dispatch = useDispatch();
   const [isNew, setIsNew] = useState("");
-  const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
   const sizeIcon = 16;
   const fontText = fontFamily.quicksand.regular;
-  const handleEditAvatar = async () => {
-    const token = await AsyncStorage.getItem("auth");
-    console.log("Token", token);
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      const uri = result.assets[0].uri;
-      const formData = new FormData();
-      formData.append("avatar", {
-        uri,
-        type: "image/jpeg",
-        name: "avatar.jpg",
-      } as any);
-
-      try {
-        setLoading(true); // ✅ bật loading
-        const res = await authenticationAPI.HandleAuthentication(
-          "/upload-avatar",
-          formData,
-          "post"
-        );
-
-        console.log("res", res);
-
-        if (res.status === 200) {
-          setAvatarUri(res?.avatar); // ✅ cập nhật ảnh ngay lập tức
-          dispatch(updateAvatar(res?.avatar)); // ✅ cập nhật Redux
-        } else {
-          Alert.alert("Lỗi", "Upload thất bại, vui lòng thử lại!");
-        }
-      } catch (err) {
-        console.error("Upload lỗi", err);
-        Alert.alert("Lỗi", "Không thể upload ảnh");
-      } finally {
-        setLoading(false); // ✅ tắt loading dù thành công hay lỗi
-      }
-    }
+  const getFullUrl = (path?: string | null) => {
+    if (!path) return undefined;
+    if (path.startsWith("http")) return path;
+    return `${appInfo.BASE_URL}${path.replace(/\\/g, "/")}`;
   };
-
   return (
-    <ContainerCus isScroll>
+    <ContainerCus>
       <HeaderCus
         type="logo-with-icons"
         leftLogo={
@@ -145,6 +89,7 @@ const HomeScreens = ({ navigation }: any) => {
           />
           <SectionCus styles={{ flex: 1, paddingBottom: 0 }}>
             <InputCus
+              onEnd={() => navigation.navigate("NewPost")}
               onChange={(val) => setIsNew(val)}
               allowClear
               value={isNew}
@@ -196,9 +141,24 @@ const HomeScreens = ({ navigation }: any) => {
         </View>
       </SectionCus>
       <StoryCus />
-      <CardFeedCus likes={2330} comments={20000} />
-      <CardFeedCus likes={2330} comments={20000} />
-      <CardFeedCus likes={2330} comments={20000} />
+      <FlatList
+        data={posts}
+        keyExtractor={(item) => item._id}
+        renderItem={({ item }) => {
+          const author = item.author || {};
+          return (
+            <CardFeedCus
+              content={item.content || ""}
+              name={author.username || author.name || "Người dùng"}
+              uri={getFullUrl(author?.avatar)}
+              image={getFullUrl(item.image)}
+              likes={item.likes?.length || 0}
+              comments={item.comments?.length || 0}
+              time={122}
+            />
+          );
+        }}
+      />
     </ContainerCus>
   );
 };

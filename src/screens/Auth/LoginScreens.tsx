@@ -21,6 +21,7 @@ import authenticationAPI from "../../apis/authApi";
 import { Validate } from "../../utils/validate";
 import { addAuth } from "../../redux/reduces/authReducer";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { clearProfile, fetchProfile } from "../../redux/reduces/profileReducer";
 
 const LoginScreens = ({ navigation }: any) => {
   const [email, setEmail] = React.useState("");
@@ -54,6 +55,8 @@ const LoginScreens = ({ navigation }: any) => {
         setIsLoading(false);
         await AsyncStorage.setItem("auth", JSON.stringify(res.data));
         dispatch(addAuth(res.data));
+        dispatch(clearProfile()); // reset profile cũ
+        dispatch(fetchProfile()); // fetch profile mới
         console.log("✅ Login success", res);
       } catch (err: any) {
         setErrorMessage(err.response?.data || err.message);

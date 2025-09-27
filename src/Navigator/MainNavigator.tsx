@@ -4,6 +4,7 @@ import DrawerNavigator from "./DrawerNavigator";
 import { IntroScreen } from "../screens/Auth";
 import HomeScreens from "../screens/home/HomeScreens";
 import { StoryScreen } from "../screens";
+import NewPost from "../screens/home/component/NewPost";
 
 const MainNavigator = () => {
   const Stack = createNativeStackNavigator();
@@ -16,7 +17,9 @@ const MainNavigator = () => {
     >
       <Stack.Screen name="Main" component={DrawerNavigator} />
       <Stack.Screen name="StoryScreens" component={StoryScreen} />
-      {/* <Stack.Screen name="HomeScreens" component={HomeScreens} /> */}
+      <Stack.Screen name="HomeScreens" component={HomeScreens} />
+
+      <Stack.Screen name="NewPost" component={NewPost} />
       {/* <Stack.Screen name="IntoScreen" component={IntroScreen} /> */}
     </Stack.Navigator>
   );
