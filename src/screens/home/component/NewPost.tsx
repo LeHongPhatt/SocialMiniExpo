@@ -1,5 +1,3 @@
-
-
 import {
   Alert,
   Button,
@@ -51,8 +49,6 @@ const NewPost = ({ navigation }: any) => {
     else setVisibility("only");
   };
 
-  
-
   const submitPost = async () => {
     if (!isPost && !image) return;
 
@@ -68,7 +64,7 @@ const NewPost = ({ navigation }: any) => {
 
     try {
       const token = await AsyncStorage.getItem("accessToken");
-     
+
       const res = await authenticationAPI.HandleAuthentication(
         "/new-post",
         formData,

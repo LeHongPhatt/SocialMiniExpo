@@ -1,5 +1,5 @@
 import { View, Text, Alert } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, {  useState } from "react";
 import {
   ButtonCus,
   ContainerCus,

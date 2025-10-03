@@ -37,13 +37,20 @@ import {
   addPosts,
   setHasMore,
   setLoading,
+  toggleLike,
+  setLikes,
 } from "../../redux/reduces/postReducer";
 import { updateAvatar } from "../../redux/reduces/authReducer";
+import { RootState } from "@reduxjs/toolkit/query";
+import axios from "axios";
+import postAPI from "../../apis/postApi";
 
 const { width } = Dimensions.get("window");
 
 const ProfileScreens = () => {
+  const auth = useSelector((state: RootState) => state.auth);
   const [profile, setProfile] = useState<any>(null);
+
   const [edit, setEdit] = useState(false);
   const [updateName, setUpdateName] = useState("");
   const [isBio, setIsBio] = useState("");
@@ -55,7 +62,12 @@ const ProfileScreens = () => {
   const { posts, page, hasMore, loading } = useSelector(
     (state: any) => state.posts
   );
-
+  console.log("=============posts============", posts);
+  const getFullUrl = (path?: string | null) => {
+    if (!path) return undefined;
+    if (path.startsWith("http")) return path;
+    return `${appInfo.BASE_URL}${path.replace(/\\/g, "/")}`;
+  };
   const dispatch = useDispatch();
 
   const LIMIT = 10;
@@ -76,26 +88,25 @@ const ProfileScreens = () => {
     }
   };
 
-  const loadPosts = async (reset = false) => {
-    if (!profile?.id) {
+  const loadPosts = async (id: string, page = 1, limit = 10) => {
+    if (!id) {
       return;
     }
     dispatch(setLoading(true));
     try {
-      const currentPage = reset ? 1 : page;
-      const res = await authenticationAPI.HandleAuthentication(
-        `/get-post?author=${profile.id}&page=${currentPage}&limit=${LIMIT}`,
-        null,
+      const res = await postAPI.request(
+        `/user/${id}?page=${page}&limit=${limit}`,
+        undefined,
         "get"
       );
-
-      if (res?.posts) {
-        if (reset) {
-          dispatch(setPosts(res.posts));
+      console.log("🟢=============== getUserPost:============", res);
+      if (res?.getPost) {
+        if (page === 1) {
+          dispatch(setPosts(res.getPost));
         } else {
-          dispatch(addPosts(res.posts));
+          dispatch(addPosts(res.getPost));
         }
-        dispatch(setHasMore(res.posts.length === LIMIT));
+        dispatch(setHasMore(res.getPost.length === LIMIT));
       }
     } catch (err) {
       console.log("❌ Lỗi loadPosts:", err);
@@ -125,7 +136,6 @@ const ProfileScreens = () => {
       console.log("❌ Lỗi update profile:", error);
     }
   };
-
   const handleEditAvatar = async () => {
     const token = await AsyncStorage.getItem("auth");
 
@@ -175,7 +185,7 @@ const ProfileScreens = () => {
   useEffect(() => {
     if (profile?.id && firstLoad.current) {
       firstLoad.current = false;
-      loadPosts(true);
+      loadPosts();
     }
   }, [profile?.id]);
   const handleSwitch = (index: number) => {
@@ -191,12 +201,48 @@ const ProfileScreens = () => {
     try {
       const profileRes = await loadProfile();
       if (profileRes?.id) {
-        await loadPosts(true);
+        await loadPosts();
       }
     } finally {
       setRefreshing(false);
     }
   };
+
+  const handleLike = async (postId: string, alreadyLiked: boolean) => {
+    console.log("👍 handleLike", postId, alreadyLiked);
+    if (!auth.authData.id) return;
+    // cập nhật UI trước
+    dispatch(toggleLike({ postId, userId: auth.authData.id }));
+
+    try {
+      let res;
+
+      if (alreadyLiked) {
+        res = await postAPI.request(`/${postId}/like`, undefined, "delete");
+        console.log("🟠 Unlike response:", res.data);
+      } else {
+        res = await postAPI.request(`/${postId}/like`, undefined, "post");
+        console.log("🟢 Like response:", res);
+      }
+
+      // đồng bộ lại với backend
+      if (res?.data?.likes) {
+        console.log("✅ Like updated:", res.data.likes);
+        dispatch(setLikes({ postId, likes: res.data.likes }));
+      }
+    } catch (error) {
+      console.log("❌ Like failed:", error);
+      // rollback nếu lỗi
+      dispatch(toggleLike({ postId, userId: auth.id }));
+    }
+  };
+
+  useEffect(() => {
+    if (profile?.id) {
+      loadPosts(profile.id, 1, LIMIT);
+    }
+  }, [profile?.id]);
+
   const renderHeader = useCallback(
     () => (
       <View>
@@ -322,22 +368,27 @@ const ProfileScreens = () => {
     ),
     [profile, edit, updateName, isBio, activeIndex]
   );
-
-  const renderItem = ({ item }: any) => (
-    <CardFeedCus
-      likes={item.likes?.length || 0}
-      comments={item.comments?.length || 0}
-      uri={
-        item.author?.avatar?.startsWith("http")
-          ? item.author.avatar
-          : `${appInfo.BASE_URL}${item.author?.avatar ?? ""}`
-      }
-      name={item.author?.name}
-      content={item.content}
-      image={item.image}
-    />
-  );
-
+  const renderItem = ({ item }: any) => {
+    console.log("=====🟢 Post item:", item.image);
+    return (
+      <View>
+        <CardFeedCus
+          likes={item?.length || 0}
+          comments={item?.length || 0}
+          uri={
+            item.author?.avatar?.startsWith("http")
+              ? item.author.avatar
+              : `${appInfo.BASE_URL}${item.author?.avatar ?? ""}`
+          }
+          name={item.author?.username}
+          content={item.content}
+          image={getFullUrl(item.image)}
+          // isLiked={item.author.likes.includes(auth.id)}
+          // onLike={() => handleLike(item.id, item.likes.includes(auth.id))}
+        />
+      </View>
+    );
+  };
   return (
     <FlatList
       data={activeIndex === 0 ? posts : []}
@@ -353,7 +404,11 @@ const ProfileScreens = () => {
         if (loading) {
           return (
             <Text
-              style={{ textAlign: "center", marginVertical: 10, fontSize: 16 }}
+              style={{
+                textAlign: "center",
+                marginVertical: 10,
+                fontSize: 16,
+              }}
             >
               Đang tải...
             </Text>
