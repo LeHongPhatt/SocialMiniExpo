@@ -5,13 +5,22 @@ import { FontAwesome, MaterialIcons, Feather } from "@expo/vector-icons";
 interface ActionBarProps {
   likeCount: number | string;
   commentCount: number | string;
+  isLiked?: boolean; // trạng thái đã like chưa
+  onLike?: () => void; // callback khi nhấn like
 }
 
-const ActionCus: React.FC<ActionBarProps> = ({ likeCount, commentCount }) => {
-  const [liked, setLiked] = useState(false);
+const ActionCus: React.FC<ActionBarProps> = ({
+  likeCount,
+  commentCount,
+  isLiked = false,
+  onLike,
+}) => {
+  const [liked, setLiked] = useState(isLiked);
   const [saved, setSaved] = useState(false);
-  const [currentLike, setCurrentLike] = useState(0);
-  const [currentComment, setCurrentComment] = useState(0);
+  const [currentLike, setCurrentLike] = useState(Number(likeCount) || 0);
+  const [currentComment, setCurrentComment] = useState(
+    Number(commentCount) || 0
+  );
 
   // Chuyển props sang number an toàn
   useEffect(() => {
@@ -21,7 +30,10 @@ const ActionCus: React.FC<ActionBarProps> = ({ likeCount, commentCount }) => {
 
   const toggleLike = () => {
     setLiked(!liked);
-    setCurrentLike(prev => liked ? prev - 1 : prev + 1);
+    setCurrentLike((prev) => (liked ? prev - 1 : prev + 1));
+
+    // Gọi callback nếu có (từ parent) để update redux + gọi API
+    if (onLike) onLike();
   };
 
   const toggleSave = () => setSaved(!saved);

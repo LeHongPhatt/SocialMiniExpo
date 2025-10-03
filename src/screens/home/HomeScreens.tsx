@@ -1,13 +1,15 @@
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Image,
+  RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { use, useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
@@ -28,126 +30,270 @@ import { globalStyles } from "../../styles/globalStyles";
 import { fontFamily } from "../../constants/fontFamily";
 import { RootState } from "../../redux/store";
 import { appInfo } from "../../constants/appInfors";
+import postAPI from "../../apis/postApi";
+import {
+  addPostAtStart,
+  setLikes,
+  toggleLike,
+} from "../../redux/reduces/postReducer";
+import authenticationAPI from "../../apis/authApi";
+import { appColors } from "../../constants/appColors";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
+
+interface PostType {
+  id: string;
+  content: string;
+  image?: string;
+  likes: string[];
+  comments: string[];
+  createdAt: string;
+  author?: {
+    id: string;
+    username?: string;
+    avatar?: string;
+  };
+}
+
 const HomeScreens = ({ navigation, route }: any) => {
   const posts = useSelector((state: RootState) => state.posts.posts);
+  const auth = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
   const profile = useSelector((state: RootState) => state.profile);
   const [isNew, setIsNew] = useState("");
+  const [IsPosts, setIsPosts] = useState<PostType[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [refreshing, setRefreshing] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const sizeIcon = 16;
+  const LIMIT = 10;
+
   const fontText = fontFamily.quicksand.regular;
   const getFullUrl = (path?: string | null) => {
     if (!path) return undefined;
     if (path.startsWith("http")) return path;
     return `${appInfo.BASE_URL}${path.replace(/\\/g, "/")}`;
   };
+
+  const handleLike = async (postId: string, alreadyLiked: boolean) => {
+    console.log("👍 handleLike", postId, alreadyLiked);
+    // if (!auth.authData.id) return;
+    if (!auth.authData.id) return;
+    // cập nhật UI trước
+    dispatch(toggleLike({ postId, userId: auth.authData.id }));
+
+    try {
+      let res;
+
+      if (alreadyLiked) {
+        res = await postAPI.request(`/${postId}/like`, undefined, "delete");
+        console.log("🟠 Unlike response:", res.data);
+      } else {
+        res = await postAPI.request(`/${postId}/like`, undefined, "post");
+        console.log("🟢 Like response:", res);
+      }
+
+      // đồng bộ lại với backend
+      if (res?.data?.likes) {
+        console.log("✅ Like updated:", res.data.likes);
+        dispatch(setLikes({ postId, likes: res.data.likes }));
+      }
+    } catch (error) {
+      console.log("❌ Like failed:", error);
+      // rollback nếu lỗi
+      dispatch(toggleLike({ postId, userId: auth.id }));
+    }
+  };
+  const fetchPosts = async (reset = false) => {
+    if (loading) return;
+    setLoading(true);
+
+    try {
+      const currentPage = reset ? 1 : page;
+
+      const res = await authenticationAPI.HandleAuthentication(
+        `/get-post?page=${currentPage}&limit=${LIMIT}`,
+        null,
+        "get"
+      );
+
+      if (!isMounted.current) return;
+
+      if (res?.posts) {
+        setIsPosts((prev) => {
+          const combined = reset ? res.posts : [...prev, ...res.posts];
+          const uniquePosts = Array.from(
+            new Map(combined.map((p) => [p._id, p])).values()
+          );
+          return uniquePosts;
+        });
+
+        setHasMore(res.posts.length === LIMIT);
+        setPage(reset ? 2 : currentPage + 1);
+      } else {
+        console.warn("⚠️ API không trả về 'posts'");
+      }
+    } catch (error) {
+      console.log("❌ Lỗi khi tải bài đăng:", error);
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    }
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setPage(1);
+    fetchPosts(true);
+  }, []);
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+  const onEndReached = useCallback(() => {
+    if (!loading && hasMore) {
+      fetchPosts();
+    }
+  }, [loading, hasMore]);
+
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    fetchPosts(true);
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const renderHeader = () => {
+    return (
+      <View>
+        <HeaderCus
+          type="logo-with-icons"
+          leftLogo={
+            <Image
+              source={Images.textLogo}
+              style={{ width: 150, height: 150 }}
+              resizeMode="contain"
+            />
+          }
+          icons={[
+            {
+              icon: <FontAwesome name="search" size={22} />,
+              onPress: () => console.log("Search"),
+            },
+            {
+              icon: <FontAwesome name="bell" size={22} />,
+              onPress: () => console.log("Notify"),
+            },
+            {
+              icon: <FontAwesome name="envelope" size={22} />,
+              onPress: () => console.log("Settings"),
+            },
+          ]}
+        />
+        <SectionCus>
+          <View
+            style={{
+              flexDirection: "row",
+
+              paddingBottom: 0,
+            }}
+          >
+            <AvatarCus
+              style={{ paddingLeft: 15 }}
+              size={50}
+              uri={
+                profile.avatar
+                  ? profile.avatar.startsWith("http")
+                    ? profile.avatar
+                    : `${appInfo.BASE_URL}${profile.avatar}`
+                  : "https://dummyimage.com/100x100/cccccc/000000.png&text=No+Avatar"
+              }
+              initials="PM"
+              // onEdit={handleEditAvatar}
+              backgroundColor="#EAEAEA"
+            />
+            <SectionCus styles={{ flex: 1, paddingBottom: 0 }}>
+              <InputCus
+                onEnd={() => navigation.navigate("NewPost")}
+                onChange={(val) => setIsNew(val)}
+                allowClear
+                value={isNew}
+                placeholder="What your on head ?"
+                styles={{
+                  marginHorizontal: 0,
+                  paddingHorizontal: 0,
+                  backgroundColor: "translate",
+                  borderWidth: 0,
+                }}
+              />
+            </SectionCus>
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              alignSelf: "center",
+            }}
+          >
+            <TouchableOpacity
+              onPress={() => navigation.navigate("NewPost")}
+              style={[globalStyles.row, globalStyles.alCenter]}
+            >
+              <FontAwesome size={sizeIcon} name="image" />
+              <TextCus
+                font={fontText}
+                size={sizeIcon}
+                text="Images"
+                styles={{ marginLeft: 5 }}
+              />
+            </TouchableOpacity>
+            <DividerCus />
+            <TouchableOpacity style={[globalStyles.row, globalStyles.alCenter]}>
+              <FontAwesome size={sizeIcon} name="cloud-upload" />
+              <TextCus
+                font={fontText}
+                size={sizeIcon}
+                text="Videos"
+                styles={{ marginLeft: 5 }}
+              />
+            </TouchableOpacity>
+            <DividerCus />
+            <TouchableOpacity style={[globalStyles.row, globalStyles.alCenter]}>
+              <FontAwesome name="cloud-upload" size={sizeIcon} />
+              <TextCus
+                font={fontText}
+                size={sizeIcon}
+                text="Attach"
+                styles={{ marginLeft: 5 }}
+              />
+            </TouchableOpacity>
+          </View>
+        </SectionCus>
+        <StoryCus />
+      </View>
+    );
+  };
   return (
     <ContainerCus>
-      <HeaderCus
-        type="logo-with-icons"
-        leftLogo={
-          <Image
-            source={Images.textLogo}
-            style={{ width: 150, height: 150 }}
-            resizeMode="contain"
-          />
-        }
-        icons={[
-          {
-            icon: <FontAwesome name="search" size={22} />,
-            onPress: () => console.log("Search"),
-          },
-          {
-            icon: <FontAwesome name="bell" size={22} />,
-            onPress: () => console.log("Notify"),
-          },
-          {
-            icon: <FontAwesome name="envelope" size={22} />,
-            onPress: () => console.log("Settings"),
-          },
-        ]}
-      />
-      <SectionCus>
-        <View
-          style={{
-            flexDirection: "row",
-
-            paddingBottom: 0,
-          }}
-        >
-          <AvatarCus
-            style={{ paddingLeft: 15 }}
-            size={50}
-            uri={
-              profile.avatar
-                ? profile.avatar.startsWith("http")
-                  ? profile.avatar
-                  : `${appInfo.BASE_URL}${profile.avatar}`
-                : "https://dummyimage.com/100x100/cccccc/000000.png&text=No+Avatar"
-            }
-            initials="PM"
-            // onEdit={handleEditAvatar}
-            backgroundColor="#EAEAEA"
-          />
-          <SectionCus styles={{ flex: 1, paddingBottom: 0 }}>
-            <InputCus
-              onEnd={() => navigation.navigate("NewPost")}
-              onChange={(val) => setIsNew(val)}
-              allowClear
-              value={isNew}
-              placeholder="What your on head ?"
-              styles={{
-                marginHorizontal: 0,
-                paddingHorizontal: 0,
-                backgroundColor: "translate",
-                borderWidth: 0,
-              }}
-            />
-          </SectionCus>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            alignSelf: "center",
-          }}
-        >
-          <TouchableOpacity style={[globalStyles.row, globalStyles.alCenter]}>
-            <FontAwesome size={sizeIcon} name="image" />
-            <TextCus
-              font={fontText}
-              size={sizeIcon}
-              text="Images"
-              styles={{ marginLeft: 5 }}
-            />
-          </TouchableOpacity>
-          <DividerCus />
-          <TouchableOpacity style={[globalStyles.row, globalStyles.alCenter]}>
-            <FontAwesome size={sizeIcon} name="cloud-upload" />
-            <TextCus
-              font={fontText}
-              size={sizeIcon}
-              text="Videos"
-              styles={{ marginLeft: 5 }}
-            />
-          </TouchableOpacity>
-          <DividerCus />
-          <TouchableOpacity style={[globalStyles.row, globalStyles.alCenter]}>
-            <FontAwesome name="cloud-upload" size={sizeIcon} />
-            <TextCus
-              font={fontText}
-              size={sizeIcon}
-              text="Attach"
-              styles={{ marginLeft: 5 }}
-            />
-          </TouchableOpacity>
-        </View>
-      </SectionCus>
-      <StoryCus />
       <FlatList
-        data={posts}
+        showsVerticalScrollIndicator={false}
+        data={IsPosts}
         keyExtractor={(item) => item._id}
-        renderItem={({ item }) => {
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.3}
+        ListHeaderComponent={renderHeader}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        renderItem={({ item, index }) => {
           const author = item.author || {};
           return (
             <CardFeedCus
+              key={index}
               content={item.content || ""}
               name={author.username || author.name || "Người dùng"}
               uri={getFullUrl(author?.avatar)}
@@ -155,9 +301,26 @@ const HomeScreens = ({ navigation, route }: any) => {
               likes={item.likes?.length || 0}
               comments={item.comments?.length || 0}
               time={122}
+              isLiked={item.likes.includes(auth.id)}
+              onLike={() => handleLike(item._id, item.likes.includes(auth.id))}
             />
           );
         }}
+        ListFooterComponent={
+          !refreshing &&
+          (loading ? (
+            <ActivityIndicator
+              size="small"
+              color={appColors?.primary || "blue"}
+              style={{ marginVertical: 15 }}
+            />
+          ) : !hasMore && posts.length > 0 ? (
+            <TextCus
+              text="Bạn đã xem hết tất cả bài đăng 🎉"
+              styles={{ textAlign: "center", marginVertical: 10 }}
+            />
+          ) : null)
+        }
       />
     </ContainerCus>
   );

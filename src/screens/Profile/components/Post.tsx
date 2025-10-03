@@ -57,9 +57,7 @@ const Post = () => {
 
       if (!isMounted.current) return;
 
-
       if (res?.posts) {
-
         setPosts((prev) => {
           const combined = reset ? res.posts : [...prev, ...res.posts];
           const uniquePosts = Array.from(

@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface Post {
-    id: string;
+    _id: string;
     author: { _id: string; name: string; avatar: string };
     content: string;
     image?: string;
@@ -54,9 +54,25 @@ const postSlice = createSlice({
             state.page = 1;
             state.hasMore = true;
         },
+        setLikes(state, action: PayloadAction<{ postId: string; likes: string[] }>) {
+            const { postId, likes } = action.payload;
+            const post = state.posts.find((p) => p._id === postId);
+            if (post) post.likes = likes;
+        }, toggleLike(state, action: PayloadAction<{ postId: string; userId: string }>) {
+            const { postId, userId } = action.payload;
+            console.log("===toggleLike action.payload===", action.payload);
+            const post = state.posts.find((p) => p._id === postId);
+            if (post) {
+                if (post.likes.includes(userId)) {
+                    post.likes = post.likes.filter((id) => id !== userId);
+                } else {
+                    post.likes.push(userId);
+                }
+            }
+        },
     },
 });
 
 export const postReducer = postSlice.reducer;
-export const { setPosts, addPosts, addPostAtStart, setLoading, setHasMore, resetPosts } =
+export const { setPosts, addPosts, addPostAtStart, setLoading, setHasMore, resetPosts, setLikes, toggleLike } =
     postSlice.actions;
