@@ -212,49 +212,36 @@ const HomeScreens = ({ navigation, route }: any) => {
     }
   };
 
-  // const loadStories = async () => {
-  //   setLoadingStories(true);
-  //   try {
-  //     const res = await storiesApi.request("/get-stories", null, "get");
-
-  //     if (res?.stories) {
-  //       const formattedStories = res.stories.map((story: any) => ({
-  //         id: story._id,
-  //         username: story.user?.username || "Ẩn danh",
-  //         avatar: story.user?.avatar
-  //           ? getFullUrl(story.user.avatar)
-  //           : "https://dummyimage.com/100x100/cccccc/000000.png&text=User",
-  //         imageUri: story.media ? getFullUrl(story.media) : null,
-  //       }));
-
-  //       setStories(formattedStories);
-  //     }
-  //   } catch (error) {
-  //   } finally {
-  //     setLoadingStories(false);
-  //   }
-  // };
-
   const loadStories = async () => {
     setLoadingStories(true);
     try {
       const res = await storiesApi.request("/get-stories", null, "get");
-      console.log("✅ Stories loaded:", res);
-
       if (res?.stories) {
+        // Gắn user info cho từng story
         const formattedStories = res.stories.map((story: any) => ({
           id: story._id,
+          media: story.media ? getFullUrl(story.media) : null,
+          type: story.type || "image",
           user: {
+            id: story.user?._id,
             username: story.user?.username || "Ẩn danh",
             avatar: story.user?.avatar
               ? getFullUrl(story.user.avatar)
               : "https://dummyimage.com/100x100/cccccc/000000.png&text=User",
           },
-          media: story.media ? getFullUrl(story.media) : null,
-          type: story.type || "image",
         }));
 
-        setStories(formattedStories);
+        // Group stories theo user để hiển thị 1 vòng tròn / user
+        const grouped: { [key: string]: any } = {};
+        formattedStories.forEach((s) => {
+          const userId = s.user.id;
+          if (!grouped[userId]) {
+            grouped[userId] = { user: s.user, stories: [] };
+          }
+          grouped[userId].stories.push(s);
+        });
+
+        setStories(Object.values(grouped));
       }
     } catch (error) {
       console.log("❌ Load stories error:", error);
@@ -267,22 +254,11 @@ const HomeScreens = ({ navigation, route }: any) => {
     loadStories();
   }, []);
 
-  const handleStoryPress = async (storyItem: any, startIdx = 0) => {
-    try {
-      const res = await storiesApi.request(
-        `/view-story/${storyItem.id}`,
-        null,
-        "get"
-      );
-      const storyFromApi = res?.story ?? res; // an toàn
-      const all = stories; // stories đã formatted ở state
-      const pos = all.findIndex((s) => s.id === storyItem.id);
-      setViewerStories(all);
-      setViewerStartIndex(pos >= 0 ? pos : startIdx);
-      setViewerVisible(true);
-    } catch (error) {
-      console.log("❌ Lỗi khi mở story:", error);
-    }
+  const handleStoryPress = (item: any) => {
+    if (!item?.userStories || item.userStories.length === 0) return;
+    setViewerStories(item.userStories);
+    setViewerStartIndex(0);
+    setViewerVisible(true);
   };
 
   if (showUpload) {
@@ -426,13 +402,21 @@ const HomeScreens = ({ navigation, route }: any) => {
           Stories
         </Text>
         <StoryList
-          stories={stories}
+          stories={stories
+            .filter((s) => s.stories && s.stories.length > 0)
+            .map((s) => ({
+              id: s.user.id,
+              username: s.user.username,
+              imageUri: s.user.avatar,
+              userStories: s.stories,
+            }))}
           onStoryPress={(item) => handleStoryPress(item)}
         />
+
         <StoryViewer
           visible={viewerVisible}
           onClose={() => setViewerVisible(false)}
-          stories={viewerStories}
+          stories={viewerStories || []} // fallback empty array
           startIndex={viewerStartIndex}
           duration={5000}
         />

@@ -25,9 +25,9 @@ type StoryItem = {
 type StoryViewerProps = {
   visible: boolean;
   onClose: () => void;
-  stories: StoryItem[]; // danh sách story của 1 user hoặc nhiều item để auto next
+  stories: StoryItem[];
   startIndex?: number;
-  duration?: number; // ms per story
+  duration?: number;
 };
 
 export default function StoryViewer({
@@ -40,7 +40,6 @@ export default function StoryViewer({
   const [index, setIndex] = useState(startIndex);
   const progress = useRef(new Animated.Value(0)).current;
   const panY = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     if (visible) {
       setIndex(startIndex);
@@ -48,13 +47,10 @@ export default function StoryViewer({
     } else {
       resetProgress();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, startIndex]);
 
   useEffect(() => {
-    // restart progress when index changes
     if (visible) startProgress();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index]);
 
   const startProgress = () => {
@@ -64,9 +60,7 @@ export default function StoryViewer({
       duration: duration,
       useNativeDriver: false,
     }).start(({ finished }) => {
-      if (finished) {
-        handleNext();
-      }
+      if (finished) handleNext();
     });
   };
 
@@ -86,21 +80,15 @@ export default function StoryViewer({
 
   const handlePrev = () => {
     resetProgress();
-    if (index > 0) {
-      setIndex((i) => i - 1);
-    } else {
-      // nếu muốn quay lại hoặc đóng - ta giữ là không làm gì
-    }
+    if (index > 0) setIndex((i) => i - 1);
   };
 
-  // Tap zones: left half prev, right half next
   const onTap = (evt: any) => {
     const x = evt.nativeEvent.locationX;
     if (x < SCREEN_W / 3) handlePrev();
     else handleNext();
   };
 
-  // Pan to swipe down to close
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -111,7 +99,6 @@ export default function StoryViewer({
       },
       onPanResponderRelease: (_, gesture) => {
         if (gesture.dy > 120) {
-          // swipe down enough -> close
           Animated.timing(panY, {
             toValue: SCREEN_H,
             duration: 200,
@@ -121,7 +108,6 @@ export default function StoryViewer({
             onClose();
           });
         } else {
-          // reset
           Animated.spring(panY, { toValue: 0, useNativeDriver: true }).start();
         }
       },
@@ -131,7 +117,7 @@ export default function StoryViewer({
   if (!stories || stories.length === 0) return null;
 
   const current = stories[index];
-
+  console.log("=====Current Story=====", current);
   const progressWidth = progress.interpolate({
     inputRange: [0, 1],
     outputRange: ["0%", "100%"],
@@ -140,10 +126,7 @@ export default function StoryViewer({
   return (
     <Modal visible={visible} animationType="fade" transparent>
       <Animated.View
-        style={[
-          styles.container,
-          { transform: [{ translateY: panY } as any] as any },
-        ]}
+        style={[styles.container, { transform: [{ translateY: panY } as any] }]}
         {...panResponder.panHandlers}
       >
         <View style={styles.topBar}>
@@ -169,9 +152,7 @@ export default function StoryViewer({
         <View style={styles.header}>
           <Image
             source={
-              current.user?.avatar
-                ? { uri: current.user.avatar }
-                : Images.logo
+              current.user?.avatar ? { uri: current.user.avatar } : Images.logo
             }
             style={styles.avatar}
           />
@@ -201,10 +182,7 @@ export default function StoryViewer({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "black",
-  },
+  container: { flex: 1, backgroundColor: "black" },
   topBar: {
     position: "absolute",
     top: 30,
@@ -228,13 +206,8 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     overflow: "hidden",
   },
-  progressFill: {
-    height: 3,
-    backgroundColor: "white",
-  },
-  closeBtn: {
-    padding: 6,
-  },
+  progressFill: { height: 3, backgroundColor: "white" },
+  closeBtn: { padding: 6 },
   header: {
     position: "absolute",
     top: 60,
@@ -243,27 +216,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: 8,
-  },
-  username: {
-    color: "white",
-    fontWeight: "600",
-  },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  media: {
-    width: SCREEN_W,
-    height: SCREEN_H,
-  },
-  empty: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  avatar: { width: 36, height: 36, borderRadius: 18, marginRight: 8 },
+  username: { color: "white", fontWeight: "600" },
+  content: { flex: 1, justifyContent: "center", alignItems: "center" },
+  media: { width: SCREEN_W, height: SCREEN_H },
+  empty: { justifyContent: "center", alignItems: "center" },
 });
