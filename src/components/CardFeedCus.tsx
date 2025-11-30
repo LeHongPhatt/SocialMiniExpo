@@ -18,6 +18,7 @@ interface CardFeedCusProps {
   time?: string | number; // ISO string hoặc timestamp
   isLiked?: boolean;
   onLike?: () => void;
+  onPressComment?: () => void;
 }
 
 const formatTime = (time?: string | number) => {
@@ -46,6 +47,7 @@ const CardFeedCus: React.FC<CardFeedCusProps> = ({
   time,
   onLike,
   isLiked,
+  onPressComment
 }) => {
   // Convert URL avatar
   const avatarUri =
@@ -95,6 +97,7 @@ const CardFeedCus: React.FC<CardFeedCusProps> = ({
         commentCount={comments}
         isLiked={isLiked}
         onLike={onLike}
+        onPressComment={onPressComment}
       />
     </View>
   );

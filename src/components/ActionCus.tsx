@@ -7,6 +7,7 @@ interface ActionBarProps {
   commentCount: number | string;
   isLiked?: boolean; // trạng thái đã like chưa
   onLike?: () => void; // callback khi nhấn like
+  onPressComment?: () => void; // callback khi nhấn comment
 }
 
 const ActionCus: React.FC<ActionBarProps> = ({
@@ -14,6 +15,7 @@ const ActionCus: React.FC<ActionBarProps> = ({
   commentCount,
   isLiked = false,
   onLike,
+  onPressComment,
 }) => {
   const [liked, setLiked] = useState(isLiked);
   const [saved, setSaved] = useState(false);
@@ -51,7 +53,7 @@ const ActionCus: React.FC<ActionBarProps> = ({
       </TouchableOpacity>
 
       {/* Comment */}
-      <TouchableOpacity style={styles.action}>
+      <TouchableOpacity style={styles.action} onPress={onPressComment}>
         <FontAwesome name="comment-o" size={24} color="black" />
         <Text style={styles.text}>{currentComment}</Text>
       </TouchableOpacity>

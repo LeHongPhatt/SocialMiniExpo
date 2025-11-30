@@ -70,6 +70,18 @@ const postSlice = createSlice({
                 }
             }
         },
+        // redux/postSlice.ts
+        addCommentToPost(
+            state,
+            action: PayloadAction<{ postId: string; comment: any }>
+        ) {
+            const { postId, comment } = action.payload;
+            const post = state.posts.find((p) => p._id === postId);
+            if (post) {
+                post.comments.push(comment);
+            }
+        }
+
     },
 });
 

@@ -13,15 +13,19 @@ import {
 const Stack = createNativeStackNavigator();
 const AuthNavigator = ({ initialRouteName = "LoginScreens" }: any) => {
   return (
-    <Stack.Navigator 
-    initialRouteName={initialRouteName || "LoginScreens"}
-     screenOptions={{ headerShown: false }}>
-      {/* <Stack.Screen name="IntroScreens" component={IntroScreen} /> */}
+    <Stack.Navigator
+      initialRouteName={initialRouteName || "LoginScreens"}
+      screenOptions={{ headerShown: false }}
+    >
       <Stack.Screen name="LoginScreens" component={LoginScreens} />
       <Stack.Screen name="RegisterScreens" component={RegisterScreens} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
       <Stack.Screen name="OtpScreen" component={OtpScreen} />
-      <Stack.Screen name="ResetPasswordScreens" component={ResetPasswordScreens} />
+      <Stack.Screen
+        name="ResetPasswordScreens"
+        component={ResetPasswordScreens}
+      />
+      <Stack.Screen name="IntroScreen" component={IntroScreen} />
     </Stack.Navigator>
   );
 };

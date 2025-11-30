@@ -52,7 +52,7 @@ const AppRouters = () => {
 
   if (isShowSplash) return <SplashScreen />;
 
-  if (!hasSeenIntro) return <AuthNavigator initialRouteName="IntroScreens" />;
+  if (!hasSeenIntro) return <AuthNavigator initialRouteName="IntroScreen" />;
 
   return auth.accesstoken ? (
     <MainNavigator />

@@ -1,6 +1,7 @@
 import {
   ActivityIndicator,
   Alert,
+  Button,
   FlatList,
   Image,
   RefreshControl,
@@ -20,7 +21,9 @@ import {
   DividerCus,
   InputCus,
   SectionCus,
+  SpaceCus,
   StoryCus,
+  StoryList,
   TextCus,
 } from "../../components";
 import HeaderCus from "../../components/HeaderCus";
@@ -40,6 +43,9 @@ import authenticationAPI from "../../apis/authApi";
 import { appColors } from "../../constants/appColors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
+import { StoryScreen } from "..";
+import storiesApi from "../../apis/storyApi";
+import StoryViewer from "../story/StoryViewer";
 
 interface PostType {
   id: string;
@@ -66,9 +72,17 @@ const HomeScreens = ({ navigation, route }: any) => {
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [activePostId, setActivePostId] = useState<string | null>(null);
+  const [stories, setStories] = useState<any[]>([]);
+  console.log("=====Posts in home screen: =====", stories);
+  const [showUpload, setShowUpload] = useState(false);
+  const [loadingStories, setLoadingStories] = useState(false);
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerStories, setViewerStories] = useState<any[]>([]);
+  const [viewerStartIndex, setViewerStartIndex] = useState(0);
   const sizeIcon = 16;
   const LIMIT = 10;
-
+  const [commentText, setCommentText] = useState("");
   const fontText = fontFamily.quicksand.regular;
   const getFullUrl = (path?: string | null) => {
     if (!path) return undefined;
@@ -168,6 +182,127 @@ const HomeScreens = ({ navigation, route }: any) => {
     };
   }, []);
 
+  const handleComment = async (postId: string) => {
+    if (!commentText.trim()) return;
+
+    try {
+      const res = await postAPI.request(
+        `/${postId}/comments`,
+        { text: commentText },
+        "post"
+      );
+
+      console.log("✅ Comment response:", res.data);
+
+      // reset
+      setCommentText("");
+      setActivePostId(null);
+
+      // TODO: cập nhật lại state IsPosts (hoặc redux) để thêm comment mới
+      // Ví dụ:
+      setIsPosts((prev) =>
+        prev.map((p) =>
+          p._id === postId
+            ? { ...p, comments: [...(p.comments || []), res.comment] }
+            : p
+        )
+      );
+    } catch (error) {
+      console.log("❌ Error comment:", error);
+    }
+  };
+
+  // const loadStories = async () => {
+  //   setLoadingStories(true);
+  //   try {
+  //     const res = await storiesApi.request("/get-stories", null, "get");
+
+  //     if (res?.stories) {
+  //       const formattedStories = res.stories.map((story: any) => ({
+  //         id: story._id,
+  //         username: story.user?.username || "Ẩn danh",
+  //         avatar: story.user?.avatar
+  //           ? getFullUrl(story.user.avatar)
+  //           : "https://dummyimage.com/100x100/cccccc/000000.png&text=User",
+  //         imageUri: story.media ? getFullUrl(story.media) : null,
+  //       }));
+
+  //       setStories(formattedStories);
+  //     }
+  //   } catch (error) {
+  //   } finally {
+  //     setLoadingStories(false);
+  //   }
+  // };
+
+  const loadStories = async () => {
+    setLoadingStories(true);
+    try {
+      const res = await storiesApi.request("/get-stories", null, "get");
+      console.log("✅ Stories loaded:", res);
+
+      if (res?.stories) {
+        const formattedStories = res.stories.map((story: any) => ({
+          id: story._id,
+          user: {
+            username: story.user?.username || "Ẩn danh",
+            avatar: story.user?.avatar
+              ? getFullUrl(story.user.avatar)
+              : "https://dummyimage.com/100x100/cccccc/000000.png&text=User",
+          },
+          media: story.media ? getFullUrl(story.media) : null,
+          type: story.type || "image",
+        }));
+
+        setStories(formattedStories);
+      }
+    } catch (error) {
+      console.log("❌ Load stories error:", error);
+    } finally {
+      setLoadingStories(false);
+    }
+  };
+
+  useEffect(() => {
+    loadStories();
+  }, []);
+
+  const handleStoryPress = async (storyItem: any, startIdx = 0) => {
+    try {
+      const res = await storiesApi.request(
+        `/view-story/${storyItem.id}`,
+        null,
+        "get"
+      );
+      const storyFromApi = res?.story ?? res; // an toàn
+      const all = stories; // stories đã formatted ở state
+      const pos = all.findIndex((s) => s.id === storyItem.id);
+      setViewerStories(all);
+      setViewerStartIndex(pos >= 0 ? pos : startIdx);
+      setViewerVisible(true);
+    } catch (error) {
+      console.log("❌ Lỗi khi mở story:", error);
+    }
+  };
+
+  if (showUpload) {
+    return (
+      <StoryScreen
+        onUploadSuccess={() => {
+          setShowUpload(false);
+          loadStories(); // reload stories sau khi upload
+        }}
+      />
+    );
+  }
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#FF8501" />
+      </View>
+    );
+  }
   const renderHeader = () => {
     return (
       <View>
@@ -195,6 +330,7 @@ const HomeScreens = ({ navigation, route }: any) => {
             },
           ]}
         />
+        <SpaceCus height={60} />
         <SectionCus>
           <View
             style={{
@@ -214,7 +350,6 @@ const HomeScreens = ({ navigation, route }: any) => {
                   : "https://dummyimage.com/100x100/cccccc/000000.png&text=No+Avatar"
               }
               initials="PM"
-              // onEdit={handleEditAvatar}
               backgroundColor="#EAEAEA"
             />
             <SectionCus styles={{ flex: 1, paddingBottom: 0 }}>
@@ -252,7 +387,10 @@ const HomeScreens = ({ navigation, route }: any) => {
               />
             </TouchableOpacity>
             <DividerCus />
-            <TouchableOpacity style={[globalStyles.row, globalStyles.alCenter]}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("NewPost")}
+              style={[globalStyles.row, globalStyles.alCenter]}
+            >
               <FontAwesome size={sizeIcon} name="cloud-upload" />
               <TextCus
                 font={fontText}
@@ -262,7 +400,10 @@ const HomeScreens = ({ navigation, route }: any) => {
               />
             </TouchableOpacity>
             <DividerCus />
-            <TouchableOpacity style={[globalStyles.row, globalStyles.alCenter]}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("NewPost")}
+              style={[globalStyles.row, globalStyles.alCenter]}
+            >
               <FontAwesome name="cloud-upload" size={sizeIcon} />
               <TextCus
                 font={fontText}
@@ -273,7 +414,28 @@ const HomeScreens = ({ navigation, route }: any) => {
             </TouchableOpacity>
           </View>
         </SectionCus>
-        <StoryCus />
+        <Button title="Đăng Story mới" onPress={() => setShowUpload(true)} />
+        <Text
+          style={{
+            fontSize: 18,
+            fontWeight: "bold",
+            marginLeft: 10,
+            marginTop: 10,
+          }}
+        >
+          Stories
+        </Text>
+        <StoryList
+          stories={stories}
+          onStoryPress={(item) => handleStoryPress(item)}
+        />
+        <StoryViewer
+          visible={viewerVisible}
+          onClose={() => setViewerVisible(false)}
+          stories={viewerStories}
+          startIndex={viewerStartIndex}
+          duration={5000}
+        />
       </View>
     );
   };
@@ -292,18 +454,90 @@ const HomeScreens = ({ navigation, route }: any) => {
         renderItem={({ item, index }) => {
           const author = item.author || {};
           return (
-            <CardFeedCus
-              key={index}
-              content={item.content || ""}
-              name={author.username || author.name || "Người dùng"}
-              uri={getFullUrl(author?.avatar)}
-              image={getFullUrl(item.image)}
-              likes={item.likes?.length || 0}
-              comments={item.comments?.length || 0}
-              time={122}
-              isLiked={item.likes.includes(auth.id)}
-              onLike={() => handleLike(item._id, item.likes.includes(auth.id))}
-            />
+            <View>
+              <CardFeedCus
+                key={index}
+                content={item.content || ""}
+                name={author.username || author.name || "Người dùng"}
+                uri={getFullUrl(author?.avatar)}
+                image={getFullUrl(item.image)}
+                likes={item.likes?.length || 0}
+                comments={item.comments?.length || 0}
+                time={122}
+                isLiked={item.likes.includes(auth.id)}
+                onLike={() =>
+                  handleLike(item._id, item.likes.includes(auth.id))
+                }
+                // onPressComment={() => console.log("Comment")}
+                onPressComment={() => setActivePostId(item._id)}
+              />
+              {activePostId === item._id && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginTop: 5,
+                  }}
+                >
+                  <InputCus
+                    value={commentText}
+                    onChange={(val) => setCommentText(val)}
+                    placeholder="Viết bình luận..."
+                    styles={{ flex: 1, marginRight: 10 }}
+                  />
+                  <ButtonCus
+                    type="primary"
+                    text="Gửi"
+                    onPress={() => handleComment(item._id)}
+                  />
+                </View>
+              )}
+              {item.comments && item.comments.length > 0 && (
+                <View style={{ marginLeft: 15, marginTop: 5 }}>
+                  {item.comments.slice(-2).map((c: any, i: number) => {
+                    console.log("==========Comment item============: ", c);
+                    return (
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginVertical: 2,
+                        }}
+                        key={i}
+                      >
+                        <AvatarCus
+                          size={30}
+                          uri={
+                            c.user?.avatar
+                              ? c.user?.avatar.startsWith("http")
+                                ? c.user?.avatar
+                                : `${appInfo.BASE_URL}${c.user?.avatar}`
+                              : "https://dummyimage.com/100x100/cccccc/000000.png&text=PM"
+                          }
+                        />
+                        <Text style={{ fontSize: 14, marginLeft: 3 }}>
+                          <Text style={{ fontWeight: "bold" }}>
+                            {c.user?.username || "Ẩn danh"}:{" "}
+                          </Text>
+                          {c.text}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                  {item.comments.length > 2 && (
+                    <TouchableOpacity
+                      onPress={() =>
+                        navigation.navigate("CommentDetail", { post: item })
+                      }
+                    >
+                      <Text style={{ color: "gray" }}>
+                        Xem tất cả {item.comments.length} bình luận
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </View>
           );
         }}
         ListFooterComponent={
