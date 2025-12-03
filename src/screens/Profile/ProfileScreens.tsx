@@ -331,7 +331,7 @@ const ProfileScreens = () => {
               borderRadius: 10,
             }}
           >
-            <FontAwesome name="home" size={34} />
+            <FontAwesome name="reorder" size={34} />
           </View>
         </RowCus>
 
@@ -368,21 +368,22 @@ const ProfileScreens = () => {
     ),
     [profile, edit, updateName, isBio, activeIndex]
   );
-  const renderItem = ({ item }: any) => {
-    console.log("=====🟢 Post item:", item.image);
+  const renderItem = ({ item, index }: any) => {
+    console.log("=====🟢 Post item:", item);
     return (
       <View>
         <CardFeedCus
-          likes={item?.length || 0}
-          comments={item?.length || 0}
+          comments={item.comments?.length || 0}
+          likes={item.likes?.length || 0}
           uri={
             item.author?.avatar?.startsWith("http")
               ? item.author.avatar
               : `${appInfo.BASE_URL}${item.author?.avatar ?? ""}`
           }
           name={item.author?.username}
-          content={item.content}
+          content={item.content || ""}
           image={getFullUrl(item.image)}
+          time={item.createdAt}
           // isLiked={item.author.likes.includes(auth.id)}
           // onLike={() => handleLike(item.id, item.likes.includes(auth.id))}
         />
@@ -390,40 +391,42 @@ const ProfileScreens = () => {
     );
   };
   return (
-    <FlatList
-      data={activeIndex === 0 ? posts : []}
-      keyExtractor={(item) => item._id}
-      renderItem={activeIndex === 0 ? renderItem : undefined}
-      ListHeaderComponent={renderHeader}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-      onEndReached={handleLoadMore}
-      onEndReachedThreshold={0.1}
-      ListFooterComponent={() => {
-        if (loading) {
-          return (
-            <Text
-              style={{
-                textAlign: "center",
-                marginVertical: 10,
-                fontSize: 16,
-              }}
-            >
-              Đang tải...
-            </Text>
-          );
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={activeIndex === 0 ? posts : []}
+        keyExtractor={(item) => item._id}
+        renderItem={activeIndex === 0 ? renderItem : undefined}
+        ListHeaderComponent={renderHeader}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        if (!hasMore) {
-          return (
-            <Text style={{ textAlign: "center", marginVertical: 10 }}>
-              Bạn đã xem hết 🎉
-            </Text>
-          );
-        }
-        return null;
-      }}
-    />
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.1}
+        ListFooterComponent={() => {
+          if (loading) {
+            return (
+              <Text
+                style={{
+                  textAlign: "center",
+                  marginVertical: 10,
+                  fontSize: 16,
+                }}
+              >
+                Đang tải...
+              </Text>
+            );
+          }
+          if (!hasMore) {
+            return (
+              <Text style={{ textAlign: "center", marginVertical: 10 }}>
+                Bạn đã xem hết 🎉
+              </Text>
+            );
+          }
+          return null;
+        }}
+      />
+    </View>
   );
 };
 
