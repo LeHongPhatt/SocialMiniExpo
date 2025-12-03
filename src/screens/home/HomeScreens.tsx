@@ -46,7 +46,7 @@ import * as ImagePicker from "expo-image-picker";
 import { StoryScreen } from "..";
 import storiesApi from "../../apis/storyApi";
 import StoryViewer from "../story/StoryViewer";
-
+import io from "socket.io-client";
 interface PostType {
   id: string;
   content: string;
@@ -64,6 +64,7 @@ interface PostType {
 const HomeScreens = ({ navigation, route }: any) => {
   const posts = useSelector((state: RootState) => state.posts.posts);
   const auth = useSelector((state: RootState) => state.auth);
+  console.log("🏠 HomeScreens render", auth.authData.id);
   const dispatch = useDispatch();
   const profile = useSelector((state: RootState) => state.profile);
   const [isNew, setIsNew] = useState("");
@@ -74,12 +75,13 @@ const HomeScreens = ({ navigation, route }: any) => {
   const [hasMore, setHasMore] = useState(true);
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [stories, setStories] = useState<any[]>([]);
-  console.log("=====Posts in home screen: =====", stories);
   const [showUpload, setShowUpload] = useState(false);
   const [loadingStories, setLoadingStories] = useState(false);
   const [viewerVisible, setViewerVisible] = useState(false);
   const [viewerStories, setViewerStories] = useState<any[]>([]);
   const [viewerStartIndex, setViewerStartIndex] = useState(0);
+  const socketRef = useRef<any>(null);
+
   const sizeIcon = 16;
   const LIMIT = 10;
   const [commentText, setCommentText] = useState("");
@@ -89,6 +91,36 @@ const HomeScreens = ({ navigation, route }: any) => {
     if (path.startsWith("http")) return path;
     return `${appInfo.BASE_URL}${path.replace(/\\/g, "/")}`;
   };
+  const socket = io(`${appInfo.BASE_URL}`);
+
+  useEffect(() => {
+    // Join user room với userId của mình
+    if (auth.authData?.id) {
+      socket.emit("join_user", auth.authData.id);
+    }
+
+    // Lắng nghe story mới
+    socket.on("new_story", (story) => {
+      // console.log("New story received:", story);
+      setStories((prev) => {
+        // Group theo user nếu muốn giống storyList
+        const existingUserIndex = prev.findIndex(
+          (s) => s.user.id === story.user.id
+        );
+        if (existingUserIndex >= 0) {
+          const updated = [...prev];
+          updated[existingUserIndex].stories.unshift(story);
+          return updated;
+        } else {
+          return [{ user: story.user, stories: [story] }, ...prev];
+        }
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [auth.authData?.id]);
 
   const handleLike = async (postId: string, alreadyLiked: boolean) => {
     console.log("👍 handleLike", postId, alreadyLiked);
@@ -216,6 +248,7 @@ const HomeScreens = ({ navigation, route }: any) => {
     setLoadingStories(true);
     try {
       const res = await storiesApi.request("/get-stories", null, "get");
+      console.log("===========✅ Load stories response===========:", res);
       if (res?.stories) {
         // Gắn user info cho từng story
         const formattedStories = res.stories.map((story: any) => ({
@@ -292,17 +325,14 @@ const HomeScreens = ({ navigation, route }: any) => {
             />
           }
           icons={[
-            {
-              icon: <FontAwesome name="search" size={22} />,
-              onPress: () => console.log("Search"),
-            },
+           
             {
               icon: <FontAwesome name="bell" size={22} />,
               onPress: () => console.log("Notify"),
             },
             {
               icon: <FontAwesome name="envelope" size={22} />,
-              onPress: () => console.log("Settings"),
+              onPress: () => navigation.navigate("ChatListScreen"),
             },
           ]}
         />
@@ -479,7 +509,6 @@ const HomeScreens = ({ navigation, route }: any) => {
               {item.comments && item.comments.length > 0 && (
                 <View style={{ marginLeft: 15, marginTop: 5 }}>
                   {item.comments.slice(-2).map((c: any, i: number) => {
-                    console.log("==========Comment item============: ", c);
                     return (
                       <View
                         style={{

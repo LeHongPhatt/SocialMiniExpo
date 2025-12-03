@@ -1,5 +1,6 @@
 import {
   Platform,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -79,7 +80,7 @@ const DrawerComponents = ({ navigation, route }: any) => {
     },
   ];
   return (
-    <View style={{ flex: 1 }}>
+    <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
       <SectionCus
         styles={{
           flexDirection: "row",
@@ -157,7 +158,7 @@ const DrawerComponents = ({ navigation, route }: any) => {
         <FontAwesome5 size={23} name="sign-out-alt" />
         <ButtonCus onPress={handleLogout} type="text" text="LogOut" />
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
